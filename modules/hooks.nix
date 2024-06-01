@@ -1355,6 +1355,20 @@ in
             ];
           });
       };
+      shfmt = mkOption {
+        description = "shfmt hook";
+        type = types.submodule {
+          imports = [ hookModule ];
+          options.settings = {
+              language-dialect =
+              mkOption {
+                type = types.enum [ "auto" "bash" "posix" "mksh" "bats" ];
+                description = lib.mdDoc "Shell language dialect.";
+                default = "auto";
+              };
+            };
+        };
+      };
       statix = mkOption {
         description = lib.mdDoc "statix hook";
         type = types.submodule {
@@ -3163,7 +3177,15 @@ lib.escapeShellArgs (lib.concatMap (ext: [ "--ghc-opt" "-X${ext}" ]) hooks.ormol
           description = "Format shell files.";
           types = [ "shell" ];
           package = tools.shfmt;
-          entry = "${hooks.shfmt.package}/bin/shfmt -w -s -l";
+          entry =
+            let
+            cmdArgs =
+                mkCmdArgs
+                  (with hooks.sort-file-contents.settings; [
+                    [ true "-ln ${hooks.shfmt.settings.language-dialect}" ]
+                  ]);
+                in
+            "${hooks.shfmt.package}/bin/shfmt -w -s -l ${cmdArgs}";
         };
       single-quoted-strings =
         {
